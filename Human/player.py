@@ -1,11 +1,8 @@
-from Basic.token import Token
+from Human.token import Token
 import random
 import time
 
 class Player:
-
-    _instance = None
-    true_random = True
 
     def __init__(self, player):
         self.player = player
@@ -21,41 +18,56 @@ class Player:
         Player._instance = self
 
     def action(self):
-        # simulate thinking for 0.5 seconds
-        # time.sleep(0.5)
-        
-        # TODO check opponent token in our throw region
-        
+        while True:
+            print("\n\t#throws left =", self.num_throws_left, "\n")
 
-        # if we do not have a token
-        throw = False
-        if self.tokens_list:
-            # decide what to do
-            action = random.randint(0, len(self.tokens_list))
-            if self.num_throws_left == 0: action = random.randint(0, len(self.tokens_list)-1)
+            action_type = input("\taction_type: ").strip()
+            if action_type.upper() == "THROW" or action_type.upper() == "T":
+                if self.num_throws_left <= 0: 
+                    print("\t*** No more throws left ***")
+                    continue
+                
+                # calculate if throwable
+                top = 4
+                bottom = -4
+                if self.player == "upper": bottom = -5 + self.num_throws_left
+                else: top = 5 - self.num_throws_left
 
-            if action == len(self.tokens_list): 
-                # throw a token
-                throw = True
-            else:
-                # slide a token
-                token = self.tokens_list[action]
-                valid_moves = self.valid_moves(token.location)
-                return ("SLIDE", token.location, valid_moves[random.randint(0, len(valid_moves)-1)])
-        
-        if not self.tokens_list or throw:
-            if self.opponent_tokens["r"] and not self.opponent_tokens["s"] and not self.true_random:
-                token_type = "p"
-                return Player.throw_action(token_type, self.random_throw_tile())
-            elif self.opponent_tokens["p"] and not self.opponent_tokens["r"] and not self.true_random:
-                token_type = "s"
-                return Player.throw_action(token_type, self.random_throw_tile())
-            elif self.opponent_tokens["s"] and not self.opponent_tokens["p"] and not self.true_random:
-                token_type = "r"
-                return Player.throw_action(token_type, self.random_throw_tile())
-            else:
-                token_type = list(self.tokens.keys())[random.randint(0, 2)]
-                return Player.throw_action(token_type, self.random_throw_tile())
+                # get input
+                token_type = input("\ttoken_type: ").lower()
+                if token_type not in ["r", "p", "s"]: continue
+
+                destination = input("\tdestination(r between" + str(bottom) + "," + str(top) + "): ").split()
+                if len(destination) != 2: continue
+                r = int(destination[0])
+                q = int(destination[1])
+
+                if not self.is_valid_tile(r, q): continue
+                return self.throw_action(token_type, (r,q))
+
+            elif action_type.upper() == "SLIDE" or action_type.upper() == "SWING":
+                r_a = None
+                q_a = None
+                
+                if len(self.tokens_list) == 1:
+                    print("origin = (", self.tokens_list[0].location[0], ",", self.tokens_list[0].location[1], ")")
+                    origin = self.tokens_list[0].location
+                else:
+                    origin = input("\torigin: ").split()
+                    if len(origin) != 2: continue
+                r_a = int(origin[0])
+                q_a = int(origin[1])
+                if not self.is_valid_tile(r_a, q_a): continue
+
+                destination = input("\tdestination: ").split()
+                if len(destination) != 2: continue
+                r_b = int(destination[0])
+                q_b = int(destination[1])
+
+                if not self.is_valid_tile(r_b, q_b): continue
+                return self.move_action(action_type.upper(), (r_a,q_a), (r_b, q_b))
+            print("Invalid input, try again!")
+
     
     
     def update(self, opponent_action, player_action):
