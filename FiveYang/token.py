@@ -1,9 +1,9 @@
 class Token:
 
-    def __init__(self, token_type, location, is_opponent):
+    def __init__(self, token_type, location, is_upper):
         self.token_type = token_type # r, p, s
         self.location = location
-        self.is_opponent = is_opponent
+        self.is_upper = is_upper
 
     # the type this token can beat
     @property

@@ -1,8 +1,13 @@
 from FiveYang.token import Token
+from FiveYang.board import Board
 
 class Player:
 
     _instance = None
+    # A list of weights
+    # 
+    weight = []
+
 
     def __init__(self, player):
         """
@@ -13,13 +18,14 @@ class Player:
         play as Upper), or the string "lower" (if the instance will play
         as Lower).
         """
-        self.player = player
+        self.is_upper = player == "upper"
         self.num_throws_left = 9
         self.num_opponent_throws_left = 9
 
         self.tokens = {"r":[], "p":[], "s":[]}
         self.opponent_tokens = {"r":[], "p":[], "s":[]}
 
+        #TODO delete this?
         Player._instance = self
 
     def action(self):
@@ -28,7 +34,8 @@ class Player:
         of the game, select an action to play this turn.
         """
         # put your code here
-        if self.player == "upper": return Player.throw_action("r", (4, -2))
+        
+        if self.is_upper: return Player.throw_action("r", (4, -2))
         else: return Player.throw_action("r", (-4, 2))
     
     def update(self, opponent_action, player_action):
@@ -86,6 +93,62 @@ class Player:
         if not token.is_opponent: self.tokens[token.token_type].remove(token)
         else: self.opponent_tokens[token.token_type].remove(token)
 
+    # evaluation function
+    def evl(self):
+        result = 0
+        # sum(weight * features)
+
+        # have equal length with weight
+        features = [f1(self),f2(self),f3(self),f4(self),f5(self),f6(self),
+            f7(self),f8(self),f9(self),f10(self),f11(self)]
+        
+        for i in range[len(features)]:
+            result += features[i] * weight[i]
+        # Use tanh(result) to normalise
+        return result
+    
+    # A list of features
+    # number of throws
+    def f1(self):
+        return self.num_throws_left
+    
+    # number of enemy in ally thorw zone
+    def f2(self):
+        number = 0
+        row = 4-(9-self.num_throws_left)
+
+        if self.is_upper:
+            for token in opponent_tokens_list:
+                if token.location[0] >= row:
+                    number += 1
+        else:
+            for token in opponent_tokens_list:
+                if token.location[0] <= row * -1:
+                    number += 1
+        return number
+
+    # need successor to implement
+    def f3(self):
+        pass
+
+    def f4(self):
+        
+    def f5(self):
+
+    def f6(self):
+
+    def f7(self):
+
+    def f8(self):
+
+    def f9(self):
+
+    def f10(self):
+
+    def f11(self):
+
+
+    
     # return the list of currently alive tokens on our side
     @property
     def tokens_list(self):
