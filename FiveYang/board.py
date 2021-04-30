@@ -128,22 +128,21 @@ class Board:
 
     # Number of oppenent tokens in ally throw zone
     def f2(self, is_upper):
-        number = 0
+        return len(self.endangered_tokens(is_upper))
+
+    def endangered_tokens(self, is_upper):
+        endangered_tokens = []
         row = 0
         if is_upper:
             row = 4-(9-self.upper_num_throws_left)
         else:
             row = 4-(9-self.lower_num_throws_left)
 
-        if is_upper:
-            for token in self.lower_tokens_list:
-                if token.location[0] >= row:
-                    number += 1
-        else:
-            for token in self.upper_tokens_list:
-                if token.location[0] <= row * -1:
-                    number += 1
-        return number
+        for token in self.ally_tokens_list(is_upper):
+            if token.location[0] >= row:
+                endangered_tokens.append(token)
+        
+        return endangered_tokens
 
     def f3(self, is_upper):
         eaten_list = []
@@ -194,7 +193,40 @@ class Board:
     (not minmax)
     '''
     def successor(self, is_upper):
-        pass
+        '''
+        TODO can use different update method to improve efficiency
+        move: ("ACTION", (r0,q0), (r1,q1))
+        '''
+        successors = []
+        
+        # Put all valid moves for tokens on board into the list
+        for token in self.ally_tokens_list(is_upper):
+            valid_moves = self.valid_moves(token)
+            for valid_move in valid_moves:
+                # Need not to specify the action type since its not checked in update method
+                action = ("", token.location, valid_move)
+                if action not in successors:
+                    successors.append(action)
+        
+        # Put all THROW actions into successors
+        if self.f2(is_upper) != 0:
+            # find all opponent tokens in our throw zone
+            # find the neighbours of those tokens
+            for token in self.endangered_tokens(is_upper):
+                # all possible location this token can be in next turn
+                possible_location = self.valid_moves(token)
+                possible_location.append(token.location)
+                for location in possible_location:
+                    # TODO if location is within the throw zone, discuss together how to implement
+                    if True:
+                        action = ("THROW", token.enemy_type, location)
+                        if action not in successors:
+                            successors.append(action)
+
+        if not self.ally_tokens_list(is_upper):
+            pass
+            
+        return successors
 
     # simply find all possible moves by a token
     def valid_moves(self, token):
@@ -239,3 +271,15 @@ class Board:
     @property
     def all_tokens_list(self):
         return upper_tokens_list + lower_tokens_list
+
+    def ally_tokens_list(self, is_upper):
+        if is_upper:
+            return self.upper_tokens_list
+        else:
+            return self.lower_tokens_list
+    
+    def oppenent_tokens_list(self, is_upper):
+        if is_upper:
+            return self.lower_tokens_list
+        else:
+            return self.upper_tokens_list

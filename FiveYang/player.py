@@ -4,10 +4,6 @@ from FiveYang.board import Board
 class Player:
 
     _instance = None
-    # A list of weights
-    # 
-    weight = []
-
 
     def __init__(self, player):
         """
@@ -19,11 +15,7 @@ class Player:
         as Lower).
         """
         self.is_upper = player == "upper"
-        self.num_throws_left = 9
-        self.num_opponent_throws_left = 9
-
-        self.tokens = {"r":[], "p":[], "s":[]}
-        self.opponent_tokens = {"r":[], "p":[], "s":[]}
+        self.board = Board()
 
         #TODO delete this?
         Player._instance = self
@@ -46,124 +38,16 @@ class Player:
         The parameter opponent_action is the opponent's chosen action,
         and player_action is this instance's latest chosen action.
         """
-        # perform all move actions
-        player = None
-        if player_action[0] == "THROW":
-            player = Token(player_action[1], player_action[2], False)
-            self.tokens[player_action[1]].append(player)
-            self.num_throws_left -= 1
-        else:
-            player = self.tokens_dict[player_action[1]]
-            player.location = player_action[2]
-            
-
-        opponent = None
-        if opponent_action[0] == "THROW":
-            opponent = Token(opponent_action[1], opponent_action[2], True)
-            self.opponent_tokens[opponent_action[1]].append(opponent)
-            self.num_opponent_throws_left -= 1
-        else:
-            opponent = self.opponent_tokens_dict[opponent_action[1]]
-            opponent.location = opponent_action[2]
-
-        # collision handling
-        self.battle_on_tile(opponent_action[2])
-        if player_action[2] != opponent_action[2]: self.battle_on_tile(player_action[2])
-
-    # remove all tokens that should be killed on a tile
-    def battle_on_tile(self, location):
-        tokens_on_tile = {"r":[], "p":[], "s":[]}
-
-        remove_type = []
-
-        for token in self.all_tokens_list:
-            if token.location == location:
-                tokens_on_tile[token.token_type].append(token)
-        
-        if tokens_on_tile["r"]: remove_type.append("s")
-        if tokens_on_tile["p"]: remove_type.append("r")
-        if tokens_on_tile["s"]: remove_type.append("p")
-
-        for r_type in remove_type:
-            for token in tokens_on_tile[r_type]:
-                self.removeToken(token)
-
-    # remove a token
-    def removeToken(self, token):
-        if not token.is_opponent: self.tokens[token.token_type].remove(token)
-        else: self.opponent_tokens[token.token_type].remove(token)
-
-    # evaluation function
-    def evl(self):
-        result = 0
-        # sum(weight * features)
-
-        # have equal length with weight
-        features = [f1(self),f2(self),f3(self),f4(self),f5(self),f6(self),
-            f7(self),f8(self),f9(self),f10(self),f11(self)]
-        
-        for i in range[len(features)]:
-            result += features[i] * weight[i]
-        # Use tanh(result) to normalise
-        return result
-    
-    # A list of features
-    # number of throws
-    def f1(self):
-        return self.num_throws_left
-    
-    # number of enemy in ally thorw zone
-    def f2(self):
-        number = 0
-        row = 4-(9-self.num_throws_left)
 
         if self.is_upper:
-            for token in opponent_tokens_list:
-                if token.location[0] >= row:
-                    number += 1
+            self.board.update(player_action, opponent_action)
         else:
-            for token in opponent_tokens_list:
-                if token.location[0] <= row * -1:
-                    number += 1
-        return number
+            self.board.update(opponent_action, player_action)
 
-    # need successor to implement
-    def f3(self):
+    # A function which perform a search algorithm and returns information  
+    # regarding the next move
+    def search(self):
         pass
-
-    def f4(self):
-        
-    def f5(self):
-
-    def f6(self):
-
-    def f7(self):
-
-    def f8(self):
-
-    def f9(self):
-
-    def f10(self):
-
-    def f11(self):
-
-
-    
-    # return the list of currently alive tokens on our side
-    @property
-    def tokens_list(self):
-        return self.tokens["r"] + self.tokens["p"] + self.tokens["s"]
-
-    # return the list of currently alive tokens on opponent side
-    @property
-    def opponent_tokens_list(self):
-        return self.opponent_tokens["r"] + self.opponent_tokens["p"] + self.opponent_tokens["s"]
-
-    @property
-    def all_tokens_list(self):
-        return self.tokens_list + self.opponent_tokens_list
-
-     # returns a dictionary {location: token}
     
     @property
     def tokens_dict(self):
