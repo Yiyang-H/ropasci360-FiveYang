@@ -19,8 +19,3 @@ class Token:
         elif self.token_type == "s": return "r"
         return "s" # we are "p"
 
-    @staticmethod
-    def hex_distance(a,b):
-        return ((abs(a[0] - b[0]) 
-            + (abs(a[0] + a[1] - b[0] - b[1]))
-            + (abs(a[1] - b[1]))) / 2 )

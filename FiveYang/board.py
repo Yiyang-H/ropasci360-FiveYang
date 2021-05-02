@@ -1,4 +1,5 @@
 from FiveYang.token import Token
+from random import randrange
 
 class Board:
     weights = (1,1,1,1,1,0,0,0,0,-1,-1,-1,-1)
@@ -132,14 +133,9 @@ class Board:
 
     def endangered_tokens(self, is_upper):
         endangered_tokens = []
-        row = 0
-        if is_upper:
-            row = 4-(9-self.upper_num_throws_left)
-        else:
-            row = 4-(9-self.lower_num_throws_left)
 
-        for token in self.ally_tokens_list(is_upper):
-            if token.location[0] >= row:
+        for token in self.oppenent_tokens_list(is_upper):
+            if self.throwable_location(is_upper, token.location):
                 endangered_tokens.append(token)
         
         return endangered_tokens
@@ -209,24 +205,48 @@ class Board:
                     successors.append(action)
         
         # Put all THROW actions into successors
-        if self.f2(is_upper) != 0:
-            # find all opponent tokens in our throw zone
-            # find the neighbours of those tokens
-            for token in self.endangered_tokens(is_upper):
-                # all possible location this token can be in next turn
-                possible_location = self.valid_moves(token)
-                possible_location.append(token.location)
-                for location in possible_location:
-                    # TODO if location is within the throw zone, discuss together how to implement
-                    if True:
-                        action = ("THROW", token.enemy_type, location)
-                        if action not in successors:
-                            successors.append(action)
+        # find all opponent tokens in our throw zone
+        # find the neighbours of those tokens
+        for token in self.endangered_tokens(is_upper):
+            # all possible location this token can be in next turn
+            possible_location = self.valid_moves(token)
+            possible_location.append(token.location)
+            for location in possible_location:
+                # if location is within the throw zone
+                if self.throwable_location(is_upper, location):
+                    action = ("THROW", token.enemy_type, location)
+                    if action not in successors:
+                        successors.append(action)
 
-        if not self.ally_tokens_list(is_upper):
-            pass
-            
+        # only throw when we have nothing else to do
+        '''
+        1. Throw to (4,2) or (-4,2)
+        2. Type: Throw the type which can beat most enemy
+        '''
+        if not successors:
+            if is_upper:
+                enemy_type = max([(len(self.lower_tokens["r"]), randrange(1024), "p"), 
+                                (len(self.lower_tokens["p"]), randrange(1024), "s"), 
+                                (len(self.lower_tokens["s"]),randrange(1024), "r")])
+
+                successors.append(("THROW", enemy_type[2], (4,-2)))
+            else:
+                enemy_type = max([(len(self.upper_tokens["r"]), randrange(1024), "p"), 
+                                (len(self.upper_tokens["p"]), randrange(1024), "s"), 
+                                (len(self.upper_tokens["s"]),randrange(1024), "r")])
+
+                successors.append(("THROW", enemy_type[2], (-4,-2)))
+
         return successors
+    
+    # can ally throw to a location
+    def throwable_location(self, is_upper, location):
+        if is_upper:
+            row = 4 - (9-self.upper_num_throws_left)
+            return location[0] >= row
+        else:
+            row = -4 + (9-self.lower_num_throws_left)
+            return location[0] <= row
 
     # simply find all possible moves by a token
     def valid_moves(self, token):
@@ -262,15 +282,15 @@ class Board:
 
     @property
     def upper_tokens_list(self):
-        return upper_tokens["r"] + upper_tokens["p"] + upper_tokens["s"]
+        return self.upper_tokens["r"] + self.upper_tokens["p"] + self.upper_tokens["s"]
     
     @property
     def lower_tokens_list(self):
-        return lower_tokens["r"] + lower_tokens["p"] + lower_tokens["s"]
+        return self.lower_tokens["r"] + self.lower_tokens["p"] + self.lower_tokens["s"]
 
     @property
     def all_tokens_list(self):
-        return upper_tokens_list + lower_tokens_list
+        return self.upper_tokens_list + self.lower_tokens_list
 
     def ally_tokens_list(self, is_upper):
         if is_upper:
