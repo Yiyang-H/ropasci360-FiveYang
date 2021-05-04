@@ -6,6 +6,7 @@ from math import inf
 class Player:
 
     _instance = None
+    start_game = [("THROW", "p", (4, -2)), ("THROW", "r", (3, -2)), ("THROW", "s", (3, -1)), ("SWING",(4,-2),(2,-1)), ("SWING",(3,-2),(1,0))]
 
     def __init__(self, player):
         """
@@ -19,6 +20,7 @@ class Player:
         self.is_upper = player == "upper"
         self.board = Board()
         self.next_move = None
+        self.turn = 0
 
         #TODO delete this?
         Player._instance = self
@@ -28,6 +30,11 @@ class Player:
         Called at the beginning of each turn. Based on the current state
         of the game, select an action to play this turn.
         """
+        self.turn += 1
+        # TODO check upper or lower
+        #  check board to see if apply start game logic or takedown logic
+        if self.turn <= 5:
+            return Player.start_game[self.turn-1]
         # put your code here
         self.max_value(deepcopy(self.board), -inf, inf)
         return self.fix_next_move()
@@ -37,10 +44,9 @@ class Player:
             return self.next_move
         else:
             if Player.hex_distance(self.next_move[1],self.next_move[2]) == 1:
-                self.next_move[0] = "SLIDE"
+                return ("SLIDE", self.next_move[1], self.next_move[2])
             else:
-                self.next_move[0] = "SWING"
-            return self.next_move
+                return ("SWING", self.next_move[1], self.next_move[2])
 
     
     def update(self, opponent_action, player_action, board = None):
@@ -60,7 +66,7 @@ class Player:
 
     # A function which perform a search algorithm and returns information  
     # regarding the next move
-    def max_value(self, board, alpha, beta, turn_count = 3, first_round = True):
+    def max_value(self, board, alpha, beta, turn_count = 2, first_round = True):
         for action in board.successor(self.is_upper):
             min_val = self.min_value(board, alpha, beta, turn_count, action)
             if first_round and min_val > alpha:
@@ -77,13 +83,20 @@ class Player:
 
         for action in board.successor(not self.is_upper):
             # update the borad
-            self.update(action, player_action, board)
 
+            # print(board.upper_tokens_list)
+            # print(board.lower_tokens_list)
+            # print(board.successor(not self.is_upper))
+            # print(player_action, action)
+            new_board = deepcopy(board)
+            self.update(action, player_action, new_board)
+            # print(board.upper_tokens_list)
+            # print(board.lower_tokens_list)
             # chech finished?
             if turn_count == 0:
-                return board.eval(self.is_upper)
+                return new_board.eval(self.is_upper)
             
-            beta = min(beta, self.max_value(deepcopy(board), alpha, beta, turn_count, first_round = False))
+            beta = min(beta, self.max_value(new_board, alpha, beta, turn_count, first_round = False))
             if beta <= alpha:
                 return alpha
         return beta

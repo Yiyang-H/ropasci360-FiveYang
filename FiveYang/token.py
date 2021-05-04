@@ -19,3 +19,5 @@ class Token:
         elif self.token_type == "s": return "r"
         return "s" # we are "p"
 
+    def __repr__(self):
+        return self.token_type + " " + str(self.location)

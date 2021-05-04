@@ -23,3 +23,14 @@ features
     4. #defeated tokens
     5. Opponent: sum of (row_weight * current row of each token)
 '''
+
+'''
+Modification:
+1. Start game database
+2. Reduce branching factor:
+    1. throw action to current enemy location
+    2. Optionally remove all tokens' valid_moves
+    3. Taking down enemy logic
+
+3. If both side are fully within their portion of the board, apply different logic
+'''

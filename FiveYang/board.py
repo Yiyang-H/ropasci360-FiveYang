@@ -2,7 +2,7 @@ from FiveYang.token import Token
 from random import randrange
 
 class Board:
-    weights = (1,1,1,1,1,0,0,0,0,-1,-1,-1,-1)
+    weights = (10,3,7,100,1,-10,-3,-7,-10,-1)
 
     def __init__(self):
         self.upper_num_throws_left = 9
@@ -35,7 +35,9 @@ class Board:
 
 
     # Finds a token at a location belongs to a side
-    def find_token_at_location(self, loation, is_upper):
+    def find_token_at_location(self, location, is_upper):
+        # print(self.upper_tokens)
+        # print(location)
         tokens_list = []
         if is_upper:
             tokens_list = self.upper_tokens_list
@@ -71,8 +73,8 @@ class Board:
         for token in self.all_tokens_list:
             if token.location == location:
                 tokens_on_tile.append(token)
-                if token.type not in types_on_tile:
-                    types_on_tile.append(token.type)
+                if token.token_type not in types_on_tile:
+                    types_on_tile.append(token.token_type)
         
         for token in tokens_on_tile:
             if token.enemy_type in types_on_tile:
@@ -81,9 +83,9 @@ class Board:
         
     def remove_token(self, token):
         if token.is_upper:
-            self.upper_tokens[tokens.token_type].remove(token)
+            self.upper_tokens[token.token_type].remove(token)
         else:
-            self.lower_tokens[tokens.token_type].remove(token)
+            self.lower_tokens[token.token_type].remove(token)
 
     def eval(self, is_upper):
         total = 0
@@ -104,19 +106,19 @@ class Board:
         total += self.f5(is_upper) * self.weights[4]
 
         # Feature E1:
-        total += self.f1(not is_upper) * self.weights[9]
+        total += self.f1(not is_upper) * self.weights[5]
 
         # Feature E2:
-        total += self.f2(not is_upper) * self.weights[10]
+        total += self.f2(not is_upper) * self.weights[6]
 
         # Feature E3:
-        total += self.f3(not is_upper) * self.weights[11]
+        total += self.f3(not is_upper) * self.weights[7]
 
         # Feature E4:
-        total += self.f4(not is_upper) * self.weights[12]
+        total += self.f4(not is_upper) * self.weights[8]
 
         # Feature E5:
-        total += self.f5(not is_upper) * self.weights[13]
+        total += self.f5(not is_upper) * self.weights[9]
 
         return total
 
@@ -207,16 +209,22 @@ class Board:
         # Put all THROW actions into successors
         # find all opponent tokens in our throw zone
         # find the neighbours of those tokens
-        for token in self.endangered_tokens(is_upper):
-            # all possible location this token can be in next turn
-            possible_location = self.valid_moves(token)
-            possible_location.append(token.location)
-            for location in possible_location:
-                # if location is within the throw zone
-                if self.throwable_location(is_upper, location):
-                    action = ("THROW", token.enemy_type, location)
-                    if action not in successors:
-                        successors.append(action)
+        if (is_upper and self.upper_num_throws_left != 0) or (not is_upper and self.lower_num_throws_left != 0):
+
+            for token in self.endangered_tokens(is_upper):
+                # all possible location this token can be in next turn
+                # possible_location = self.valid_moves(token)
+                # possible_location.append(token.location)
+                # for location in possible_location:
+                #     # if location is within the throw zone
+                #     if self.throwable_location(is_upper, location):
+                #         action = ("THROW", token.enemy_type, location)
+                #         if action not in successors:
+                #             successors.append(action)
+                action = ("THROW", token.enemy_type, token.location)
+                if action not in successors:
+                    successors.append(action)
+                
 
         # only throw when we have nothing else to do
         '''
@@ -258,11 +266,11 @@ class Board:
         else:
             current_tokens_list = self.lower_tokens_list
         
-        for token in current_tokens_list:
-            if token.location in neighbours:
-                far_neighbours += Board.find_neighbours(token.location)
-        for location in farNeighbours:
-            if location not in neighbours:
+        for tok in current_tokens_list:
+            if tok.location in neighbours:
+                far_neighbours += Board.find_neighbours(tok.location)
+        for location in far_neighbours:
+            if location not in neighbours and location != token.location:
                 neighbours.append(location)
 
         return neighbours
