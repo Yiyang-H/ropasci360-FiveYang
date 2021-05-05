@@ -26,11 +26,17 @@ features
 
 '''
 Modification:
-1. Start game database
+1. Start game database (ok)
 2. Reduce branching factor:
     1. throw action to current enemy location
     2. Optionally remove all tokens' valid_moves
-    3. Taking down enemy logic
 
-3. If both side are fully within their portion of the board, apply different logic
+3. Taking down enemy logic (to reduce time to run minmaax)
+    1. if all our tokens are safe from slide and swing
+    2. if some opponent tokens can be take down by slide or swing
+    3. 
+
+4. If both side are fully within their portion of the board, apply different logic
+5. Search depth depends on time consumed
+6. Avoid rock going left and right
 '''

@@ -135,6 +135,14 @@ class Board:
 
     def endangered_tokens(self, is_upper):
         endangered_tokens = []
+        # check if any throws left
+        if is_upper:
+            if self.upper_num_throws_left == 0:
+                return endangered_tokens
+        else:
+            if self.lower_num_throws_left == 0:
+                return endangered_tokens
+
 
         for token in self.oppenent_tokens_list(is_upper):
             if self.throwable_location(is_upper, token.location):
@@ -142,24 +150,24 @@ class Board:
         
         return endangered_tokens
 
-    def f3(self, is_upper):
+    def eatable_tokens(self, is_upper):
         eaten_list = []
-        ally_tokens_list = None
-        enemy_tokens_list = None
+        enemy_tokens = None
         if is_upper:
-            ally_tokens_list = self.upper_tokens_list
             enemy_tokens = self.lower_tokens
         else:
-            ally_tokens_list = self.lower_tokens_list
             enemy_tokens = self.upper_tokens
         
-        for token in ally_tokens_list:
+        for token in self.ally_tokens_list(is_upper):
             valid_moves = self.valid_moves(token)
             for enemy_token in enemy_tokens[token.beat_type]:
                 if enemy_token.location in valid_moves and enemy_token not in eaten_list:
                     eaten_list.append(enemy_token)
 
-        return len(eaten_list)
+        return eaten_list
+
+    def f3(self, is_upper):
+        return len(self.eatable_tokens(is_upper))
 
     def f4(self, is_upper):
         if is_upper:
@@ -248,6 +256,7 @@ class Board:
         return successors
     
     # can ally throw to a location
+    # TODO not throwable after 9 throws
     def throwable_location(self, is_upper, location):
         if is_upper:
             row = 4 - (9-self.upper_num_throws_left)

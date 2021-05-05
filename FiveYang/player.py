@@ -6,7 +6,8 @@ from math import inf
 class Player:
 
     _instance = None
-    start_game = [("THROW", "p", (4, -2)), ("THROW", "r", (3, -2)), ("THROW", "s", (3, -1)), ("SWING",(4,-2),(2,-1)), ("SWING",(3,-2),(1,0))]
+    upper_start_game = [("THROW", "p", (4, -2)), ("THROW", "r", (3, -2)), ("THROW", "s", (3, -1)), ("SWING",(4,-2),(2,-1)), ("SWING",(3,-2),(1,0))]
+    lower_start_game = [("THROW", "p", (-4, 2)), ("THROW", "r", (-3, 2)), ("THROW", "s", (-3, 1)), ("SWING",(-4,2),(-2,1)), ("SWING",(-3,2),(-1,0))]
 
     def __init__(self, player):
         """
@@ -31,22 +32,50 @@ class Player:
         of the game, select an action to play this turn.
         """
         self.turn += 1
-        # TODO check upper or lower
         #  check board to see if apply start game logic or takedown logic
         if self.turn <= 5:
-            return Player.start_game[self.turn-1]
+            if self.is_upper:
+                return Player.upper_start_game[self.turn-1]
+            else:
+                return Player.lower_start_game[self.turn-1]
+
+        
+        if self.take_down(): 
+            return self.take_down()
+
+            
         # put your code here
         self.max_value(deepcopy(self.board), -inf, inf)
-        return self.fix_next_move()
+        return self.fix_action(self.next_move)
     
-    def fix_next_move(self):
-        if self.next_move[0] == "THROW":
-            return self.next_move
+    # If we can take down the enemy
+    def take_down(self):
+        # check all our tokens are safe
+        if self.board.f3(not self.is_upper) != 0:
+            return None
+        if self.board.f3(self.is_upper) == 0:
+            return None
+        
+        enemy_tokens = None
+        if self.is_upper:
+            enemy_tokens = self.board.lower_tokens
         else:
-            if Player.hex_distance(self.next_move[1],self.next_move[2]) == 1:
-                return ("SLIDE", self.next_move[1], self.next_move[2])
+            enemy_tokens = self.board.upper_tokens
+        for token in self.board.ally_tokens_list(self.is_upper):
+            valid_moves = self.board.valid_moves(token)
+            for enemy_token in enemy_tokens[token.beat_type]:
+                if enemy_token.location in valid_moves:
+                    action = ("", token.location, enemy_token.location)
+                    return self.fix_action(action)
+    
+    def fix_action(self, action):
+        if action[0] == "THROW":
+            return action
+        else:
+            if Player.hex_distance(action[1],action[2]) == 1:
+                return ("SLIDE", action[1], action[2])
             else:
-                return ("SWING", self.next_move[1], self.next_move[2])
+                return ("SWING", action[1], action[2])
 
     
     def update(self, opponent_action, player_action, board = None):
