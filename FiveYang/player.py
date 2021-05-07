@@ -50,6 +50,8 @@ class Player:
 
             
         # put your code here
+
+        # TODO Might not have next action due to removing repeating state
         self.max_value(deepcopy(self.board), -inf, inf)
         return self.fix_action(self.next_move)
     
@@ -111,12 +113,12 @@ class Player:
 
         if ally not in self.history:
             self.history[ally] = (1, {opponent: 1})
-        elif opponent not in self.history[ally]:
+        elif opponent not in self.history[ally][1]:
             self.history[ally][1][opponent] = 1
         else:
             self.history[ally][1][opponent] += 1
             if self.history[ally][1][opponent] > self.history[ally][0]:
-                self.history[ally][0] = self.history[ally][1][opponent]
+                self.history[ally] = (self.history[ally][1][opponent], self.history[ally][1])
 
     def check_repeated(self, action):
         if action[0] == "THROW":
@@ -134,6 +136,7 @@ class Player:
         result = []
         for token in tokens_list:
             result.append((token.token_type, token.location))
+        result.sort()
         return tuple(result)
     
 
