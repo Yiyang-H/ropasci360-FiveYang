@@ -39,7 +39,7 @@ Modification:
 
 !4. If both side are fully within their portion of the board, apply different logic
 optional 5. Search depth depends on time consumed
-6. check repeated states
+/6. check repeated states
 7. some tokens will not move this turn
     1. if we are "r" and opponent has no "s" or "p"
     2. if we have more than 1 token alive
@@ -48,7 +48,7 @@ optional 5. Search depth depends on time consumed
     1. if 1 of our token is more than 4 tiles away from nearest opponent token
     2. if we have more than 1 token alive
     3. if our "r" not in opponent throw zone
-9. protect token diversity logic
+//9. protect token diversity logic
     1. if throws_left + #current alive token types < 3, eval -100
 10. if chased by opponent logic, stand on opponent of same type
 11. if two tokens in threat logic, and another opponent token in our throw zone, throw on that token

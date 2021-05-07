@@ -2,7 +2,7 @@ from FiveYang.token import Token
 from random import randrange
 
 class Board:
-    weights = (1000, 600, 251, 99, 0,-1000, -500, -251, -99, -0)
+    weights = (500, 99, 251, 1000, 0, 1400, -500, -99, -251, -1000, -0, -1400)
 
     def __init__(self):
         self.upper_num_throws_left = 9
@@ -105,20 +105,26 @@ class Board:
         # Feature A5:
         total += self.f5(is_upper) * self.weights[4]
 
+        # Feature A6:
+        total += self.f6(is_upper) * self.weights[5]
+
         # Feature E1:
-        total += self.f1(not is_upper) * self.weights[5]
+        total += self.f1(not is_upper) * self.weights[6]
 
         # Feature E2:
-        total += self.f2(not is_upper) * self.weights[6]
+        total += self.f2(not is_upper) * self.weights[7]
 
         # Feature E3:
-        total += self.f3(not is_upper) * self.weights[7]
+        total += self.f3(not is_upper) * self.weights[8]
 
         # Feature E4:
-        total += self.f4(not is_upper) * self.weights[8]
+        total += self.f4(not is_upper) * self.weights[9]
 
         # Feature E5:
-        total += self.f5(not is_upper) * self.weights[9]
+        total += self.f5(not is_upper) * self.weights[10]
+
+        # Feature E6:
+        total += self.f6(not is_upper) * self.weights[11]
 
         return total
 
@@ -186,8 +192,18 @@ class Board:
 
         return total
 
-    def f6(self):
-        pass
+    def f6(self, is_upper):
+        result = 0
+        if is_upper:
+            for tokens_list in self.upper_tokens:
+                if len(tokens_list) > 0: result += 1
+            result += self.upper_num_throws_left
+        else:
+            for tokens_list in self.lower_tokens:
+                if len(tokens_list) > 0: result += 1
+            result += self.lower_num_throws_left
+        if result < 3: return -10
+        return 0
 
     '''
     When do we need to put throw actions in successor?
