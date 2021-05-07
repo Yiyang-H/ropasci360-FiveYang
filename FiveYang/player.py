@@ -22,6 +22,11 @@ class Player:
         self.board = Board()
         self.next_move = None
         self.turn = 0
+        self.history = {}
+        '''
+        player_state:[(opponent_state, count)]
+        tokens_list: count
+        '''
 
         #TODO delete this?
         Player._instance = self
@@ -39,7 +44,7 @@ class Player:
             else:
                 return Player.lower_start_game[self.turn-1]
 
-        
+        # take dowen logic
         if self.take_down(): 
             return self.take_down()
 
@@ -51,7 +56,7 @@ class Player:
     # If we can take down the enemy
     def take_down(self):
         # check all our tokens are safe
-        if self.board.f3(not self.is_upper) != 0:
+        if self.board.f3(not self.is_upper) != 0 and len(self.board.ally_tokens_list(self.is_upper)) != 1:
             return None
         if self.board.f3(self.is_upper) == 0:
             return None
@@ -86,22 +91,62 @@ class Player:
         The parameter opponent_action is the opponent's chosen action,
         and player_action is this instance's latest chosen action.
         """
+        for_real = False
         if board == None:
+            for_real = True
             board = self.board
+            if opponent_action[0] == "THROW" or player_action[0] == "THROW":
+                self.history = {}
         if self.is_upper:
             board.update(player_action, opponent_action)
         else:
             board.update(opponent_action, player_action)
 
+        if for_real: self.update_history()
+
+    
+    def update_history(self):
+        ally = Player.token_to_tuple(self.board.ally_tokens_list(self.is_upper)) # num_ally_throw, num_enemy_throw
+        opponent = Player.token_to_tuple(self.board.opponent_tokens_list(self.is_upper))
+
+        if ally not in self.history:
+            self.history[ally] = (1, {opponent: 1})
+        elif opponent not in self.history[ally]:
+            self.history[ally][1][opponent] = 1
+        else:
+            self.history[ally][1][opponent] += 1
+            if self.history[ally][1][opponent] > self.history[ally][0]:
+                self.history[ally][0] = self.history[ally][1][opponent]
+
+    def check_repeated(self, action):
+        if action[0] == "THROW":
+            return False
+        # move the current action, check the new ally state
+        new_board = deepcopy(self.board)
+        new_board.find_token_at_location(action[1], self.is_upper).location = action[2]
+        ally = Player.token_to_tuple(new_board.ally_tokens_list(self.is_upper))
+        if ally in self.history and self.history[ally][0] >= 2: 
+            return True
+        return False
+
+    @staticmethod
+    def token_to_tuple(tokens_list):
+        result = []
+        for token in tokens_list:
+            result.append((token.token_type, token.location))
+        return tuple(result)
+    
+
     # A function which perform a search algorithm and returns information  
     # regarding the next move
     def max_value(self, board, alpha, beta, turn_count = 2, first_round = True):
         for action in board.successor(self.is_upper):
+            if first_round and self.check_repeated(action):
+                continue
             min_val = self.min_value(board, alpha, beta, turn_count, action)
             if first_round and min_val > alpha:
                 self.next_move = action
             alpha = max(alpha, min_val)
-            
 
             if alpha >= beta:
                 return beta

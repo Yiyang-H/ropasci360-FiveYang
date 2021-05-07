@@ -2,7 +2,7 @@ from FiveYang.token import Token
 from random import randrange
 
 class Board:
-    weights = (10,3,7,100,1,-10,-3,-7,-10,-1)
+    weights = (1000, 600, 251, 99, 0,-1000, -500, -251, -99, -0)
 
     def __init__(self):
         self.upper_num_throws_left = 9
@@ -33,7 +33,7 @@ class Board:
         if upper_action[2] != lower_action[2]:
             self.battle_on_tile(lower_action[2])
 
-
+    
     # Finds a token at a location belongs to a side
     def find_token_at_location(self, location, is_upper):
         # print(self.upper_tokens)
@@ -144,7 +144,7 @@ class Board:
                 return endangered_tokens
 
 
-        for token in self.oppenent_tokens_list(is_upper):
+        for token in self.opponent_tokens_list(is_upper):
             if self.throwable_location(is_upper, token.location):
                 endangered_tokens.append(token)
         
@@ -185,6 +185,9 @@ class Board:
                 total -= token.location[0]
 
         return total
+
+    def f6(self):
+        pass
 
     '''
     When do we need to put throw actions in successor?
@@ -315,7 +318,7 @@ class Board:
         else:
             return self.lower_tokens_list
     
-    def oppenent_tokens_list(self, is_upper):
+    def opponent_tokens_list(self, is_upper):
         if is_upper:
             return self.lower_tokens_list
         else:
