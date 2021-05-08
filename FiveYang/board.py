@@ -2,7 +2,7 @@ from FiveYang.token import Token
 from random import randrange
 
 class Board:
-    weights = (500, 99, 251, 1000, 0, 1400, -500, -99, -251, -1000, -0, -1400)
+    weights = (500, 99, 251, 1000, 0, 1400, 2, -500, -99, -251, -1000, -0, -1400)
 
     def __init__(self):
         self.upper_num_throws_left = 9
@@ -205,6 +205,23 @@ class Board:
         if result < 3: return -10
         return 0
 
+    def f7(self, is_upper):
+        distance_weight = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0}
+        result = 0
+        for player in self.ally_tokens_list(is_upper):
+            nearest_distance = 10
+            for opponent in self.opponent_tokens(is_upper)[player.beat_type]:
+                result += (10-Board.hex_distance(player.location, opponent.location)) ** 2
+                #nearest_distance = min(nearest_distance, Board.hex_distance(player.location, opponent.location))
+            #result += (10-nearest_distance) ** 2
+
+            nearest_distance = 10
+            for opponent in self.opponent_tokens(is_upper)[player.enemy_type]:
+                result -= (10-Board.hex_distance(player.location, opponent.location)) ** 2
+                #nearest_distance = min(nearest_distance, Board.hex_distance(player.location, opponent.location))
+            #result -= (10-nearest_distance) ** 2
+        return result
+
     '''
     When do we need to put throw actions in successor?
     1. When we have no token on board
@@ -344,3 +361,19 @@ class Board:
             return self.lower_tokens_list
         else:
             return self.upper_tokens_list
+
+    def ally_tokens(self, is_upper):
+        if is_upper:
+            return self.upper_tokens
+        return self.lower_tokens
+
+    def opponent_tokens(self, is_upper):
+        if is_upper:
+            return self.lower_tokens
+        return self.upper_tokens
+
+    @staticmethod
+    def hex_distance(a,b):
+        return ((abs(a[0] - b[0]) 
+            + (abs(a[0] + a[1] - b[0] - b[1]))
+            + (abs(a[1] - b[1]))) / 2 )

@@ -7,7 +7,8 @@ features
     3.3 #opponent_tokens eatable by player slide / swing actions 0-9
     4.1 #defeated oppenent tokens 0-9
     5.5 Player: sum of (row_weight * current row of each token)
-    6.0 diversity protection
+    6.0 diversity protection 0 or 10
+    7. distance to nearest meat 0-81
 
 
 ~(N)
@@ -42,7 +43,7 @@ optional 5. Search depth depends on time consumed
 /6. check repeated states
 7. some tokens will not move this turn
     1. if we are "r" and opponent has no "s" or "p"
-    2. if we have more than 1 token alive
+    2. if there are tokens other than "r"
     3. if our "r" not in opponent throw zone
 8. some tokens will not move this turn
     1. if 1 of our token is more than 4 tiles away from nearest opponent token
