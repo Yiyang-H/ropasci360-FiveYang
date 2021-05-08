@@ -300,7 +300,7 @@ class Board:
         for location in far_neighbours:
             if location not in neighbours and location != token.location:
                 neighbours.append(location)
-
+        neighbours.reverse()
         return neighbours
     
     # finds all the neighbours on board of the given location

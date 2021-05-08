@@ -50,7 +50,11 @@ optional 5. Search depth depends on time consumed
     3. if our "r" not in opponent throw zone
 //9. protect token diversity logic
     1. if throws_left + #current alive token types < 3, eval -100
+    2. Maybe eval -50 for more than 3 tokens of same type exist on board
 10. if chased by opponent logic, stand on opponent of same type
 11. if two tokens in threat logic, and another opponent token in our throw zone, throw on that token
 12. different weight for each 40 turns
+
+### IMPORTANT
+    For different logic, check that the action won't cause repeated state
 '''
