@@ -54,6 +54,7 @@ optional 5. Search depth depends on time consumed
 10. if chased by opponent logic, stand on opponent of same type
 11. if two tokens in threat logic, and another opponent token in our throw zone, throw on that token
 12. different weight for each 40 turns
+13. Throw check to break loop every 20 turns?
 
 ### IMPORTANT
     For different logic, check that the action won't cause repeated state

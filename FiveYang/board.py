@@ -278,13 +278,18 @@ class Board:
     # TODO not throwable after 9 throws
     def throwable_location(self, is_upper, location):
         if is_upper:
+            if self.upper_num_throws_left == 0:
+                return False
             row = 4 - (9-self.upper_num_throws_left)
             return location[0] >= row
         else:
+            if self.lower_num_throws_left == 0:
+                return False
             row = -4 + (9-self.lower_num_throws_left)
             return location[0] <= row
 
     # simply find all possible moves by a token
+    # TODO Swing action should be before slide action
     def valid_moves(self, token):
         neighbours = Board.find_neighbours(token.location)
         far_neighbours = []
