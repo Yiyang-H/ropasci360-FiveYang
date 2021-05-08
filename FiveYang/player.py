@@ -73,7 +73,11 @@ class Player:
             for enemy_token in enemy_tokens[token.beat_type]:
                 if enemy_token.location in valid_moves:
                     action = ("", token.location, enemy_token.location)
-                    return self.fix_action(action)
+                    # Check if current action will cause repeated state
+                    if self.check_repeated(action):
+                        return None
+                    else:
+                        return self.fix_action(action)
     
     def fix_action(self, action):
         if action[0] == "THROW":
@@ -119,6 +123,7 @@ class Player:
             self.history[ally][1][opponent] += 1
             if self.history[ally][1][opponent] > self.history[ally][0]:
                 self.history[ally] = (self.history[ally][1][opponent], self.history[ally][1])
+        # print(self.history)
 
     def check_repeated(self, action):
         if action[0] == "THROW":
