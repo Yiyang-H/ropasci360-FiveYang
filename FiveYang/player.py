@@ -37,6 +37,7 @@ class Player:
         of the game, select an action to play this turn.
         """
         self.turn += 1
+        self.next_move = None
         #  check board to see if apply start game logic or takedown logic
         if self.turn <= 5:
             if self.is_upper:
@@ -45,16 +46,23 @@ class Player:
                 return Player.lower_start_game[self.turn-1]
 
         # take dowen logic
-        if self.take_down(): 
-            return self.take_down()
+        if not self.next_move: self.next_move = self.take_down()
+
+        # charge logic
+        if not self.next_move: self.next_move = self.charge()
 
             
         # put your code here
 
         # TODO Might not have next action due to removing repeating state
-        self.max_value(deepcopy(self.board), -inf, inf)
+        if not self.next_move: self.max_value(deepcopy(self.board), -inf, inf)
         return self.fix_action(self.next_move)
     
+    def charge(self):
+        # check condition
+        
+        pass
+
     # If we can take down the enemy
     def take_down(self):
         # check all our tokens are safe
@@ -76,8 +84,7 @@ class Player:
                     # Check if current action will cause repeated state
                     if self.check_repeated(action):
                         return None
-                    else:
-                        return self.fix_action(action)
+                    return action
     
     def fix_action(self, action):
         if action[0] == "THROW":
