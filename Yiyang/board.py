@@ -1,8 +1,7 @@
-from FiveYang.token import Token
+from Yiyang.token import Token
 from random import randrange
 
 class Board:
-    weights = (500, 99, 251, 1000, 0, 1400, -500, -99, -251, -1000, -0, -1400)
 
     def __init__(self):
         self.upper_num_throws_left = 9
@@ -87,47 +86,60 @@ class Board:
         else:
             self.lower_tokens[token.token_type].remove(token)
 
+    
     def eval(self, is_upper):
+        weights = (1000, -1500, 500, 2.5)
         total = 0
+
+        total += weights[0] * self.number_of_ally_tokens(is_upper)
+
+        total += weights[1] * self.number_of_ally_tokens(not is_upper)
+
+        total += weights[2] * self.f1(is_upper)
+
+        total += weights[3] * self.position_feature(is_upper)
         
-        # Feature A1: #ally throws
-        total += self.f1(is_upper) * self.weights[0]
-
-        # Feature A2: #opponent tokens in ally throw zone
-        total += self.f2(is_upper) * self.weights[1]
-
-        # Feature A3:
-        total += self.f3(is_upper) * self.weights[2]
-
-        # Feature A4:
-        total += self.f4(is_upper) * self.weights[3]
-
-        # Feature A5:
-        total += self.f5(is_upper) * self.weights[4]
-
-        # Feature A6:
-        total += self.f6(is_upper) * self.weights[5]
-
-        # Feature E1:
-        total += self.f1(not is_upper) * self.weights[6]
-
-        # Feature E2:
-        total += self.f2(not is_upper) * self.weights[7]
-
-        # Feature E3:
-        total += self.f3(not is_upper) * self.weights[8]
-
-        # Feature E4:
-        total += self.f4(not is_upper) * self.weights[9]
-
-        # Feature E5:
-        total += self.f5(not is_upper) * self.weights[10]
-
-        # Feature E6:
-        total += self.f6(not is_upper) * self.weights[11]
 
         return total
 
+    '''
+        position_feature will evaluate how good the position of each token on board is
+    '''
+    def position_feature(self, is_upper):
+        result = 0
+        for token in self.ally_tokens_list(is_upper):
+            # increse result for each token I can beat, closer the greater
+            opponent_attract = 0
+            for opponent in self.opponent_tokens(is_upper)[token.beat_type]:
+                opponent_attract += (10 - Board.hex_distance(token.location,opponent.location)) ** 2
+            
+            opponent_repel = 0
+            # decrease result for each token who can beat me if I am not safe
+            for opponent in self.opponent_tokens(is_upper)[token.enemy_type]:
+                opponent_repel -= (10 - Board.hex_distance(token.location,opponent.location)) ** 2
+            if not self.is_token_safe(is_upper, token):
+                opponent_repel /= 2
+
+            ally_attract = 0
+            # attract to ally with beat type
+
+
+            ally_repel = 0
+            # repel ally with same type
+            result += (opponent_attract + opponent_repel + ally_attract + ally_repel)
+
+        return result
+    
+    # a token is safe if it is stacked with an enemy of same type
+    def is_token_safe(self, is_upper, token):
+        for opponent in self.opponent_tokens(is_upper)[token.token_type]:
+            if opponent.location == token.location:
+                return True
+        return False
+
+    def number_of_ally_tokens(self, is_upper):
+        return self.f1(is_upper) + len(self.ally_tokens_list(is_upper))
+    
     # Number of throws left
     def f1(self, is_upper):
         if is_upper:
@@ -305,7 +317,7 @@ class Board:
         for location in far_neighbours:
             if location not in neighbours and location != token.location:
                 neighbours.append(location)
-        neighbours.reverse()
+        # neighbours.reverse()
         return neighbours
     
     # finds all the neighbours on board of the given location
@@ -344,3 +356,21 @@ class Board:
             return self.lower_tokens_list
         else:
             return self.upper_tokens_list
+
+    def ally_tokens(self, is_upper):
+        if is_upper:
+            return self.upper_tokens
+        else:
+            return self.lower_tokens
+
+    def opponent_tokens(self, is_upper):
+        if is_upper:
+            return self.lower_tokens
+        else:
+            return self.upper_tokens
+
+    @staticmethod
+    def hex_distance(a,b):
+        return ((abs(a[0] - b[0]) 
+            + (abs(a[0] + a[1] - b[0] - b[1]))
+            + (abs(a[1] - b[1]))) / 2 )
