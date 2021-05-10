@@ -147,7 +147,7 @@ class Player:
 
     # A function which perform a search algorithm and returns information  
     # regarding the next move
-    def max_value(self, board, alpha, beta, turn_count = 2, first_round = True):
+    def max_value(self, board, alpha, beta, turn_count = 1, first_round = True):
         for action in board.successor(self.is_upper):
             if first_round and self.check_repeated(action):
                 continue

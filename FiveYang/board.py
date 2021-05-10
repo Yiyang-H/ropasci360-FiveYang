@@ -2,7 +2,7 @@ from FiveYang.token import Token
 from random import randrange
 
 class Board:
-    weights = (500, 99, 251, 1000, 0, 1400, 2, -500, -99, -251, -1000, -0, -1400)
+    
 
     def __init__(self):
         self.upper_num_throws_left = 9
@@ -88,43 +88,53 @@ class Board:
             self.lower_tokens[token.token_type].remove(token)
 
     def eval(self, is_upper):
+        weights = (500, 99, 0, 1000, 0, 1400, 1, -500, -99, -0, -1000, -0, -1400)
+
         total = 0
         
         # Feature A1: #ally throws
-        total += self.f1(is_upper) * self.weights[0]
+        total += self.f1(is_upper) * weights[0]
 
         # Feature A2: #opponent tokens in ally throw zone
-        total += self.f2(is_upper) * self.weights[1]
+        total += self.f2(is_upper) * weights[1]
 
         # Feature A3:
-        total += self.f3(is_upper) * self.weights[2]
+        total += self.f3(is_upper) * weights[2]
 
         # Feature A4:
-        total += self.f4(is_upper) * self.weights[3]
+        total += self.f4(is_upper) * weights[3]
 
         # Feature A5:
-        total += self.f5(is_upper) * self.weights[4]
+        total += self.f5(is_upper) * weights[4]
 
         # Feature A6:
-        total += self.f6(is_upper) * self.weights[5]
+        total += self.f6(is_upper) * weights[5]
+
+        total += self.f7(is_upper) * weights[6]
+
+        if self.f8(is_upper): total -= 500
+
+        if self.f8(not is_upper): total += 500
 
         # Feature E1:
-        total += self.f1(not is_upper) * self.weights[6]
+        total += self.f1(not is_upper) * weights[7]
 
         # Feature E2:
-        total += self.f2(not is_upper) * self.weights[7]
+        total += self.f2(not is_upper) * weights[8]
 
         # Feature E3:
-        total += self.f3(not is_upper) * self.weights[8]
+        total += self.f3(not is_upper) * weights[9]
 
         # Feature E4:
-        total += self.f4(not is_upper) * self.weights[9]
+        total += self.f4(not is_upper) * weights[10]
 
         # Feature E5:
-        total += self.f5(not is_upper) * self.weights[10]
+        total += self.f5(not is_upper) * weights[11]
 
         # Feature E6:
-        total += self.f6(not is_upper) * self.weights[11]
+        total += self.f6(not is_upper) * weights[12]
+
+
 
         return total
 
@@ -137,7 +147,10 @@ class Board:
 
     # Number of oppenent tokens in ally throw zone
     def f2(self, is_upper):
-        return len(self.endangered_tokens(is_upper))
+        number = len(self.endangered_tokens(is_upper))
+        if number > 0:
+            number -= 1
+        return number
 
     def endangered_tokens(self, is_upper):
         endangered_tokens = []
@@ -206,22 +219,47 @@ class Board:
         return 0
 
     def f7(self, is_upper):
-        distance_weight = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0}
         result = 0
-        for player in self.ally_tokens_list(is_upper):
-            nearest_distance = 10
-            for opponent in self.opponent_tokens(is_upper)[player.beat_type]:
-                result += (10-Board.hex_distance(player.location, opponent.location)) ** 2
-                #nearest_distance = min(nearest_distance, Board.hex_distance(player.location, opponent.location))
-            #result += (10-nearest_distance) ** 2
+        for token in self.ally_tokens_list(is_upper):
+            # increse result for each token I can beat, closer the greater
+            opponent_attract = 0
+            for opponent in self.opponent_tokens(is_upper)[token.beat_type]:
+                opponent_attract += (10 - Board.hex_distance(token.location,opponent.location)) ** 2
+            
+            opponent_repel = 0
+            # decrease result for each token who can beat me if I am not safe
+            for opponent in self.opponent_tokens(is_upper)[token.enemy_type]:
+                opponent_repel -= (10 - Board.hex_distance(token.location,opponent.location)) ** 2
+            if self.is_token_safe(is_upper, token):
+                opponent_repel = 0
 
-            nearest_distance = 10
-            for opponent in self.opponent_tokens(is_upper)[player.enemy_type]:
-                result -= (10-Board.hex_distance(player.location, opponent.location)) ** 2
-                #nearest_distance = min(nearest_distance, Board.hex_distance(player.location, opponent.location))
-            #result -= (10-nearest_distance) ** 2
+            player_attract = 0
+            for player in self.ally_tokens(is_upper)[token.beat_type]:
+                player_attract += (10 - Board.hex_distance(token.location,player.location)) ** 2
+            # attract to ally with beat type
+
+
+            player_repel = -100
+            for player in self.ally_tokens(is_upper)[token.token_type]:
+                player_repel += (10 - Board.hex_distance(token.location,player.location)) ** 2
+            # repel ally with same type
+            result += (opponent_attract*2 + opponent_repel + player_attract*0.1 + player_repel*0.2)
+
         return result
 
+    # penalty if no opponet I can defeat
+    def f8(self, is_upper):
+        for token in self.ally_tokens_list(is_upper):
+            if self.opponent_tokens(is_upper)[token.beat_type]:
+                return False
+        return True
+    
+    # a token is safe if it is stacked with an enemy of same type
+    def is_token_safe(self, is_upper, token):
+        for opponent in self.opponent_tokens(is_upper)[token.token_type]:
+            if opponent.location == token.location:
+                return True
+        return False
     '''
     When do we need to put throw actions in successor?
     1. When we have no token on board
@@ -275,20 +313,23 @@ class Board:
         1. Throw to (4,2) or (-4,2)
         2. Type: Throw the type which can beat most enemy
         '''
-        if not successors:
-            if is_upper:
-                enemy_type = max([(len(self.lower_tokens["r"]), randrange(1024), "p"), 
-                                (len(self.lower_tokens["p"]), randrange(1024), "s"), 
-                                (len(self.lower_tokens["s"]),randrange(1024), "r")])
-
-                successors.append(("THROW", enemy_type[2], (4,-2)))
-            else:
-                enemy_type = max([(len(self.upper_tokens["r"]), randrange(1024), "p"), 
-                                (len(self.upper_tokens["p"]), randrange(1024), "s"), 
-                                (len(self.upper_tokens["s"]),randrange(1024), "r")])
-
-                successors.append(("THROW", enemy_type[2], (-4,2)))
-
+        locations = [(4,-2),(3,-2),(2,-1),(1,-1),(0,0),(-1,0),(-2,1),(-3,1),(-4,2)]
+        if is_upper:
+            locations.reverse()
+            for location in locations:
+                if self.throwable_location(is_upper, location):
+                    for token_type in ["r", "p", "s"]:
+                        action = (("THROW", token_type, location))
+                        if action not in successors:
+                            successors.append(action)
+        else:
+            for location in locations:
+                if self.throwable_location(is_upper, location):
+                    for token_type in ["r", "p", "s"]:
+                        action = (("THROW", token_type, location))
+                        if action not in successors:
+                            successors.append(action)
+        
         return successors
     
     # can ally throw to a location
