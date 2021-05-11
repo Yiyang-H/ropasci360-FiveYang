@@ -88,7 +88,12 @@ class Board:
             self.lower_tokens[token.token_type].remove(token)
 
     def eval(self, is_upper):
-        weights = (500, 99, 0, 1000, 0, 1400, 1, -500, -99, -0, -1000, -0, -1400)
+        weights = (5000, 990, 0, 20000, 0, 14000, 1, -5000, -990, -0, -10000, -0, -14000)
+        # TODO
+        weight = ((100000, 5000, 2000, 50),#1: #dead
+                (10000),#2: #throw_left
+                (0),#3: #endangered
+                (0))#4: #distance
 
         total = 0
         
@@ -281,12 +286,23 @@ class Board:
         
         # Put all valid moves for tokens on board into the list
         for token in self.ally_tokens_list(is_upper):
+            if not self.is_useful(token): continue
             valid_moves = self.valid_moves(token)
             for valid_move in valid_moves:
                 # Need not to specify the action type since its not checked in update method
                 action = ("", token.location, valid_move)
                 if action not in successors:
                     successors.append(action)
+
+        if not successors:
+            for token in self.ally_tokens_list(is_upper):
+                if self.is_useful(token): continue
+                valid_moves = self.valid_moves(token)
+                for valid_move in valid_moves:
+                    # Need not to specify the action type since its not checked in update method
+                    action = ("", token.location, valid_move)
+                    if action not in successors:
+                        successors.append(action)
         
         # Put all THROW actions into successors
         # find all opponent tokens in our throw zone
@@ -322,6 +338,7 @@ class Board:
                         action = (("THROW", token_type, location))
                         if action not in successors:
                             successors.append(action)
+                    break
         else:
             for location in locations:
                 if self.throwable_location(is_upper, location):
@@ -329,9 +346,14 @@ class Board:
                         action = (("THROW", token_type, location))
                         if action not in successors:
                             successors.append(action)
+                    break
         
         return successors
     
+    def is_useful(self, token):
+        if self.opponent_tokens(token.is_upper)[token.beat_type] or self.opponent_tokens(token.is_upper)[token.enemy_type]: return True
+        return False
+
     # can ally throw to a location
     # TODO not throwable after 9 throws
     def throwable_location(self, is_upper, location):
