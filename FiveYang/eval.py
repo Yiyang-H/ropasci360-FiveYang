@@ -3,7 +3,7 @@
 features
 +(A)
     1.2 #throws 0-9
-    2.4 #opponent_tokens in player throw zone 0-9
+    2.4 #opponent_tokens in player throw zone 0-9 
     3.3 #opponent_tokens eatable by player slide / swing actions 0-9
     4.1 #defeated oppenent tokens 0-9
     5.5 Player: sum of (row_weight * current row of each token)
@@ -59,4 +59,11 @@ optional 5. Search depth depends on time consumed
 
 ### IMPORTANT
     For different logic, check that the action won't cause repeated state
+
+1. If I can eat without ally being eaten, eat enemy
+2. If 3 enemy in our throw zone and all our ally safe, throw 1
+3. 
+
+
+
 '''

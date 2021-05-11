@@ -169,23 +169,18 @@ class Board:
 
 
         for token in self.opponent_tokens_list(is_upper):
-            if self.throwable_location(is_upper, token.location):
+            if self.throwable_location(is_upper, token.location) and not self.is_token_safe(token):
                 endangered_tokens.append(token)
         
         return endangered_tokens
 
     def eatable_tokens(self, is_upper):
         eaten_list = []
-        enemy_tokens = None
-        if is_upper:
-            enemy_tokens = self.lower_tokens
-        else:
-            enemy_tokens = self.upper_tokens
         
         for token in self.ally_tokens_list(is_upper):
             valid_moves = self.valid_moves(token)
-            for enemy_token in enemy_tokens[token.beat_type]:
-                if enemy_token.location in valid_moves and enemy_token not in eaten_list:
+            for enemy_token in self.opponent_tokens(is_upper)[token.beat_type]:
+                if enemy_token.location in valid_moves and enemy_token not in eaten_list and not self.is_token_safe(enemy_token):
                     eaten_list.append(enemy_token)
 
         return eaten_list
@@ -235,7 +230,7 @@ class Board:
             # decrease result for each token who can beat me if I am not safe
             for opponent in self.opponent_tokens(is_upper)[token.enemy_type]:
                 opponent_repel -= (10 - Board.hex_distance(token.location,opponent.location)) ** 2
-            if self.is_token_safe(is_upper, token):
+            if self.is_token_safe(token):
                 opponent_repel = 0
 
             player_attract = 0
@@ -260,11 +255,19 @@ class Board:
         return True
     
     # a token is safe if it is stacked with an enemy of same type
-    def is_token_safe(self, is_upper, token):
-        for opponent in self.opponent_tokens(is_upper)[token.token_type]:
+    def is_token_safe(self, token):
+        for opponent in self.opponent_tokens(token.is_upper)[token.token_type]:
             if opponent.location == token.location:
                 return True
         return False
+
+    def skip(self, token):
+        valid_moves = self.valid_moves(token)
+        for opponent_token in self.opponent_tokens(token.is_upper)[token.beat_type]:
+            if opponent_token.location in valid_moves:
+                return True
+        return False
+
     '''
     When do we need to put throw actions in successor?
     1. When we have no token on board

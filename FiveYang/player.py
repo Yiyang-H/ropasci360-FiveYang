@@ -2,6 +2,7 @@ from FiveYang.token import Token
 from FiveYang.board import Board
 from copy import deepcopy
 from math import inf
+from random import randint
 
 class Player:
 
@@ -46,10 +47,18 @@ class Player:
                 return Player.lower_start_game[self.turn-1]
 
         # take dowen logic
-        if not self.next_move: self.next_move = self.take_down()
+        # if not self.next_move: self.next_move = self.take_down()
 
         # charge logic
-        if not self.next_move: self.next_move = self.charge()
+        # if not self.next_move: self.next_move = self.charge()
+
+        logic = self.identify_logic()
+        if logic == "attack":
+            self.next_move = self.take_down()
+        elif logic == "throw":
+            self.next_move = self.throw_logic()
+        elif logic == "trade":
+            self.next_move = self.trade_logic()
 
             
         # put your code here
@@ -57,34 +66,103 @@ class Player:
         # TODO Might not have next action due to removing repeating state
         if not self.next_move: self.max_value(deepcopy(self.board), -inf, inf)
         return self.fix_action(self.next_move)
-    
-    def charge(self):
-        # check condition
-        
-        pass
 
-    # If we can take down the enemy
+    # Identify if we can apply some specific logic to the current board
+    def identify_logic(self):
+        ally_tokens_in_danger = self.board.eatable_tokens(not self.is_upper)
+        opponent_tokens_in_danger = self.board.eatable_tokens(self.is_upper)
+
+        # attack logic: when I can defeat opponent token but opponent cannot defeat mine
+        if len(ally_tokens_in_danger) == 0 and len(opponent_tokens_in_danger) > 0:
+            return "attack"
+
+        throwable_opponent_tokens = self.board.endangered_tokens(self.is_upper)
+        # throw logic: when multiple opponent tokens in my throw zone, and all my tokens are safe
+        if len(ally_tokens_in_danger) == 0 and len(throwable_opponent_tokens) >= 3 and self.turn >= 0:
+            return "throw"
+        # defend logic: when ally_token is in danger, and there is a same type opponent token beside
+
+        # trade logic: aggressive trading strategy, 
+        #              If my move result one opponent token defeated, take that move
+        if len(opponent_tokens_in_danger) - len(ally_tokens_in_danger) > 0:
+            return "trade"
+
+
+    # When called, meaning we can take down some enemy without sacrifice any ally token
     def take_down(self):
-        # check all our tokens are safe
-        if self.board.f3(not self.is_upper) != 0 and len(self.board.ally_tokens_list(self.is_upper)) != 1:
-            return None
-        if self.board.f3(self.is_upper) == 0:
-            return None
-        
-        enemy_tokens = None
-        if self.is_upper:
-            enemy_tokens = self.board.lower_tokens
-        else:
-            enemy_tokens = self.board.upper_tokens
         for token in self.board.ally_tokens_list(self.is_upper):
             valid_moves = self.board.valid_moves(token)
-            for enemy_token in enemy_tokens[token.beat_type]:
+            for enemy_token in self.board.opponent_tokens(self.is_upper)[token.beat_type]:
                 if enemy_token.location in valid_moves:
                     action = ("", token.location, enemy_token.location)
                     # Check if current action will cause repeated state
                     if self.check_repeated(action):
-                        return None
+                        continue
                     return action
+        return None
+    
+    # When called, meaning we have at least 2/3 chance of defeating one of the enemy token at a cost of throw
+    def throw_logic(self):
+        throwable_opponent_tokens = self.board.endangered_tokens(self.is_upper)
+        # pick one of those opponent tokens
+        # pick a random one?
+        # throw one which can increse our types?
+        # throw the furthest one?
+        
+        for opponent_token in throwable_opponent_tokens:
+            if not self.board.ally_tokens(self.is_upper)[opponent_token.enemy_type]:
+                action = ("THROW", opponent_token.enemy_type, opponent_token.location)
+                return action
+        if throwable_opponent_tokens:
+            furthest_opponent_token = throwable_opponent_tokens[0]
+            for opponent_token in throwable_opponent_tokens:
+                if self.is_upper:
+                    if opponent_token.location[0] < furthest_opponent_token.location[0]:
+                        furthest_opponent_token = opponent_token
+                else:
+                    if opponent_token.location[0] > furthest_opponent_token.location[0]:
+                        furthest_opponent_token = opponent_token
+            action = ("THROW", furthest_opponent_token.enemy_type, furthest_opponent_token.location)
+            return action
+
+
+
+    # When called, meaning some ally is at risk but at the same time we can take enemy token down as well
+    def trade_logic(self):
+        opponent_tokens_in_danger = self.board.eatable_tokens(self.is_upper)
+        ally_tokens_in_danger = self.board.eatable_tokens(not self.is_upper)
+
+        # prioritise in danger ally token
+        for token in ally_tokens_in_danger:
+            valid_moves = self.board.valid_moves(token)
+            for opponent_token in opponent_tokens_in_danger:
+                if opponent_token.location in valid_moves:
+                    action = ("", token.location, opponent_token.location)
+                    if self.check_repeated(action):
+                        continue
+                    return action
+
+        # take down the least opponent type token
+        # (count, token_type)
+        token_type_count = []
+        for token_type in ["r", "p", "s"]:
+            token_type_count.append((len(self.board.opponent_tokens(self.is_upper)[token_type]), token_type))
+        token_type_count.sort()
+
+        enemy_type = {"r":"p", "p":"s", "s":"r"}
+        for token_type in token_type_count:
+            for token in self.board.ally_tokens(self.is_upper)[enemy_type[token_type[1]]]:
+                valid_moves = self.board.valid_moves(token)
+                for opponent_token in opponent_tokens_in_danger:
+                    # if this opponent token can eat our token, skip it
+                    if self.board.skip(opponent_token):
+                        continue
+                    if opponent_token.location in valid_moves:
+                        action = ("", token.location, opponent_token.location)
+                        if self.check_repeated(action):
+                            continue
+                        return action
+
     
     def fix_action(self, action):
         if action[0] == "THROW":
@@ -130,7 +208,6 @@ class Player:
             self.history[ally][1][opponent] += 1
             if self.history[ally][1][opponent] > self.history[ally][0]:
                 self.history[ally] = (self.history[ally][1][opponent], self.history[ally][1])
-        # print(self.history)
 
     def check_repeated(self, action):
         if action[0] == "THROW":
