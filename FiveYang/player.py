@@ -60,10 +60,9 @@ class Player:
         elif logic == "throw":
             self.next_move = self.throw_logic()
         elif logic == "hide":
-            self.next_move = self.hide(ally_tokens_in_danger)
+            self.next_move = self.hide_logic(ally_tokens_in_danger)
         elif logic == "trade":
             self.next_move = self.trade_logic(ally_tokens_in_danger, opponent_tokens_in_danger)
-        print(logic)
             
         # put your code here
 
@@ -84,7 +83,7 @@ class Player:
         if len(ally_tokens_in_danger) == 0 and len(throwable_opponent_tokens) >= 3 and self.turn >= 0:
             return "throw"
         # defend logic: when ally_token is in danger, and there is a same type opponent token beside
-        if len(ally_tokens_in_danger) > 0 and self.has_same_type(ally_tokens_in_danger):
+        if len(ally_tokens_in_danger) == 1 and self.has_same_type(ally_tokens_in_danger):
             return "hide"
 
         # trade logic: aggressive trading strategy, 
@@ -101,7 +100,7 @@ class Player:
                     return True
         return False
 
-    def hide(self, ally_tokens_in_danger):
+    def hide_logic(self, ally_tokens_in_danger):
         for ally in ally_tokens_in_danger:
             valid_moves = self.board.valid_moves(ally)
             for opponent in self.board.opponent_tokens(self.is_upper)[ally.token_type]:
@@ -253,7 +252,7 @@ class Player:
 
     # A function which perform a search algorithm and returns information  
     # regarding the next move
-    def max_value(self, board, alpha, beta, turn_count = 1, first_round = True):
+    def max_value(self, board, alpha, beta, turn_count = 2, first_round = True):
         if turn_count == 0:
                 return board.eval(self.is_upper)
         
