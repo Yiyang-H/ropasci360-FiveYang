@@ -73,7 +73,7 @@ class Player:
         # put your code here
 
         if not self.next_move:
-            if self.num_node_visited < 300000:
+            if self.num_node_visited < 200000:
                 self.max_value(deepcopy(self.board), -inf, inf,2)
             else:
                 self.max_value(deepcopy(self.board), -inf, inf,1)
