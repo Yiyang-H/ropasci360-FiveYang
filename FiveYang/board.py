@@ -5,26 +5,29 @@ from random import randrange
 class Board:
     
     phase = 0
-    weight = ((10000, 5000, 2000, 50),#1: #dead
-            (5000,4000),  #2: #throw_left
-            (990,990),   #3: #endangered
-            (1,1),     #4: #distance
-            (5000,5000),  #Penalty: can't defeat any
-            (1000000,1000000)) #Penalty: opponent has invincible token
+    '''
+    Phase 0: normal mode
+    Phase 1: survival mode
+    Phase 2: chasing mode
+    '''
+    weight = ((10000, 1000000, 10000),#1: #dead
+            (5000,5000,0),  #2: #throw_left
+            (990,990,990),   #3: #endangered
+            (1,1,1),     #4: #distance
+            (5000,0,50000),  #Penalty: can't defeat any
+            (1000000,1000000,1000000)) #Penalty: opponent has invincible token
 
     def __init__(self):
         self.upper_num_throws_left = 9
         self.lower_num_throws_left = 9
         self.upper_has_invincible_token = False
         self.lower_has_invincible_token = False
-        self.turn = 0
 
         self.upper_tokens = {"r":[], "p":[], "s":[]}
         self.lower_tokens = {"r":[], "p":[], "s":[]}
 
     def update(self, upper_action, lower_action):
 
-        self.turn += 1
         
         # updates upper_tokens_list
         if upper_action[0] == "THROW":
@@ -445,7 +448,7 @@ class Board:
         if is_upper:
             return self.lower_tokens
         return self.upper_tokens
-        
+
     # This function is adapted from hex distance in axial coordinates from
     # https://www.redblobgames.com/grids/hexagons/ 
     @staticmethod

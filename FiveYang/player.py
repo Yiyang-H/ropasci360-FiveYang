@@ -36,6 +36,17 @@ class Player:
         of the game, select an action to play this turn.
         """
         self.turn += 1
+
+        if self.is_upper:
+            if self.board.lower_has_invincible_token:
+                Board.phase = 1
+            if self.board.upper_has_invincible_token:
+                Board.phase = 2
+        else:
+            if self.board.upper_has_invincible_token:
+                Board.phase = 1
+            if self.board.lower_has_invincible_token:
+                Board.phase = 2
         self.next_move = None
         #  check board to see if apply start game logic or takedown logic
         if self.turn <= 5:
