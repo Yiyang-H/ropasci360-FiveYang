@@ -24,6 +24,7 @@ class Player:
         self.next_move = None
         self.turn = 0
         self.history = {}
+        self.num_node_visited = 0
         '''
         player_state:[(opponent_state, count)]
         tokens_list: count
@@ -67,8 +68,12 @@ class Player:
         # put your code here
 
         # TODO Might not have next action due to removing repeating state
-        if not self.next_move: print(self.max_value(deepcopy(self.board), -inf, inf))
-        print(self.next_move)
+        if not self.next_move:
+            if self.num_node_visited < 300000:
+                self.max_value(deepcopy(self.board), -inf, inf,2)
+            else:
+                self.max_value(deepcopy(self.board), -inf, inf,1)
+        print(self.num_node_visited)
         return self.fix_action(self.next_move)
 
     # Identify if we can apply some specific logic to the current board
@@ -252,7 +257,8 @@ class Player:
 
     # A function which perform a search algorithm and returns information  
     # regarding the next move
-    def max_value(self, board, alpha, beta, turn_count = 2, first_round = True):
+    def max_value(self, board, alpha, beta, turn_count, first_round = True):
+        self.num_node_visited += 1
         if turn_count == 0:
                 return board.eval(self.is_upper)
         

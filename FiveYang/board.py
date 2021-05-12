@@ -1,3 +1,4 @@
+from math import inf
 from FiveYang.token import Token
 from random import randrange
 
@@ -7,11 +8,16 @@ class Board:
     def __init__(self):
         self.upper_num_throws_left = 9
         self.lower_num_throws_left = 9
+        self.upper_has_invincible_token = False
+        self.lower_has_invincible_token = False
+        self.turn = 0
 
         self.upper_tokens = {"r":[], "p":[], "s":[]}
         self.lower_tokens = {"r":[], "p":[], "s":[]}
 
     def update(self, upper_action, lower_action):
+
+        self.turn += 1
         
         # updates upper_tokens_list
         if upper_action[0] == "THROW":
@@ -84,7 +90,48 @@ class Board:
         else:
             self.lower_tokens[token.token_type].remove(token)
 
+    def terminal_state(self):
+        if not self.upper_has_invincible_token: self.has_invincible_token(True)
+        if not self.lower_has_invincible_token: self.has_invincible_token(False)
+
+        if self.upper_has_invincible_token and self.lower_has_invincible_token: return "draw"
+        elif self.upper_has_invincible_token and len(self.lower_tokens_list) <= 1: return "upper"
+        elif self.lower_has_invincible_token and len(self.upper_tokens_list) <= 1: return "lower"
+
+        return None
+        
+    def has_invincible_token(self, is_upper):
+        if is_upper:
+            if self.upper_has_invincible_token: return True
+
+            if self.lower_num_throws_left != 0:
+                return False
+            self.upper_has_invincible_token = self.has_undefeatable_token(is_upper)
+        else:
+            if self.lower_has_invincible_token: return True
+
+            if self.upper_num_throws_left != 0:
+                return False
+            self.lower_has_invincible_token = self.has_undefeatable_token(is_upper)
+
+
+
+    def has_undefeatable_token(self, is_upper):
+        for token in self.ally_tokens_list(is_upper):
+            if not self.opponent_tokens(is_upper)[token.enemy_type]:
+                return True
+        return False
+
     def eval(self, is_upper):
+        terminal = self.terminal_state()
+        if terminal:
+            if is_upper:
+                if terminal == "upper": return 1000000000
+                elif terminal == "lower": return -1000000000
+            else:
+                if terminal == "lower": return 1000000000
+                elif terminal == "upper": return -1000000000
+            return 0
         debug = False
         weights = (5000, 990, 0, 10000, 0, 14000, 1, -5000, -990, -0, -10000, -0, -14000)
         # TODO
@@ -320,7 +367,7 @@ class Board:
         # find all opponent tokens in our throw zone
         # find the neighbours of those tokens
         if (is_upper and self.upper_num_throws_left != 0) or (not is_upper and self.lower_num_throws_left != 0):
-
+            # not self.endangered
             for token in self.endangered_tokens(is_upper):
                 # all possible location this token can be in next turn
                 # possible_location = self.valid_moves(token)
