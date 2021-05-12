@@ -77,7 +77,6 @@ class Player:
                 self.max_value(deepcopy(self.board), -inf, inf,2)
             else:
                 self.max_value(deepcopy(self.board), -inf, inf,1)
-        print(self.num_node_visited)
         return self.fix_action(self.next_move)
 
     # Identify if we can apply some specific logic to the current board

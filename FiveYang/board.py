@@ -10,7 +10,8 @@ class Board:
     Phase 1: survival mode
     Phase 2: chasing mode
     '''
-    weight = ((10000, 1000000, 10000),#1: #dead
+    weight = ((10000, 1000000, 1000),#0: #dead
+            (10000, 1000, 1000000), #1: kill
             (5000,5000,0),  #2: #throw_left
             (990,990,990),   #3: #endangered
             (1,1,1),     #4: #distance
@@ -146,24 +147,25 @@ class Board:
         total = 0
         
         # Feature 1: Difference in dead
-        total += (self.f4(is_upper) - self.f4(not is_upper)) * Board.weight[0][Board.phase]
+        total += self.f4(is_upper) * Board.weight[1][Board.phase] #kill
+        total -= self.f4(not is_upper) * Board.weight[0][Board.phase] #dead
 
         # Feature 2: Difference in throws
-        total += (self.f1(is_upper) - self.f1(not is_upper)) * Board.weight[1][Board.phase]
+        total += (self.f1(is_upper) - self.f1(not is_upper)) * Board.weight[2][Board.phase]
 
         # Feature 3: Diffenece in endangered tokens
-        total += (self.f2(is_upper) - self.f2(not is_upper)) * Board.weight[2][Board.phase]
+        total += (self.f2(is_upper) - self.f2(not is_upper)) * Board.weight[3][Board.phase]
 
         # Feature 4: Distance feature (difference?)
-        total += (self.f7(is_upper) - self.f2(not is_upper)) * Board.weight[3][Board.phase]
+        total += (self.f7(is_upper) - self.f2(not is_upper)) * Board.weight[4][Board.phase]
 
         # Penalty 1: Can't defeat any
         if self.f8(is_upper):
-            total -= Board.weight[4][Board.phase]
+            total -= Board.weight[5][Board.phase]
 
         # Penalty 2: Opponent has invincible
         if self.has_invincible_token(not is_upper):
-            total -= Board.weight[4][Board.phase]
+            total -= Board.weight[6][Board.phase]
 
         return total
 
