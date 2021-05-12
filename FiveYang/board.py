@@ -4,6 +4,13 @@ from random import randrange
 
 class Board:
     
+    phase = 0
+    weight = ((10000, 5000, 2000, 50),#1: #dead
+            (5000,4000),  #2: #throw_left
+            (990,990),   #3: #endangered
+            (1,1),     #4: #distance
+            (5000,5000),  #Penalty: can't defeat any
+            (1000000,1000000)) #Penalty: opponent has invincible token
 
     def __init__(self):
         self.upper_num_throws_left = 9
@@ -42,8 +49,6 @@ class Board:
     
     # Finds a token at a location belongs to a side
     def find_token_at_location(self, location, is_upper):
-        # print(self.upper_tokens)
-        # print(location)
         tokens_list = []
         if is_upper:
             tokens_list = self.upper_tokens_list
@@ -81,7 +86,6 @@ class Board:
         
         for token in tokens_on_tile:
             if token.enemy_type in types_on_tile:
-                #TODO remove this token
                 self.remove_token(token)
         
     def remove_token(self, token):
@@ -107,12 +111,14 @@ class Board:
             if self.lower_num_throws_left != 0:
                 return False
             self.upper_has_invincible_token = self.has_undefeatable_token(is_upper)
+            return self.upper_has_invincible_token
         else:
             if self.lower_has_invincible_token: return True
 
             if self.upper_num_throws_left != 0:
                 return False
             self.lower_has_invincible_token = self.has_undefeatable_token(is_upper)
+            return self.lower_has_invincible_token
 
 
 
@@ -126,76 +132,35 @@ class Board:
         terminal = self.terminal_state()
         if terminal:
             if is_upper:
-                if terminal == "upper": return 1000000000
-                elif terminal == "lower": return -1000000000
+                if terminal == "upper": return 100000000
+                elif terminal == "lower": return -100000000
             else:
-                if terminal == "lower": return 1000000000
-                elif terminal == "upper": return -1000000000
+                if terminal == "lower": return 100000000
+                elif terminal == "upper": return -100000000
             return 0
-        debug = False
-        weights = (5000, 990, 0, 10000, 0, 14000, 1, -5000, -990, -0, -10000, -0, -14000)
-        # TODO
-        weight = ((100000, 5000, 2000, 50),#1: #dead
-                (10000),#2: #throw_left
-                (0),#3: #endangered
-                (0))#4: #distance
+        # weights = (5000, 990, 0, 10000, 0, 14000, 1, -5000, -990, -0, -10000, -0, -14000)
 
         total = 0
-        if debug: values = []
         
-        # Feature A1: #ally throws
-        total += self.f1(is_upper) * weights[0]
-        if debug: values.append(self.f1(is_upper) * weights[0])
+        # Feature 1: Difference in dead
+        total += (self.f4(is_upper) - self.f4(not is_upper)) * Board.weight[0][Board.phase]
 
-        # Feature A2: #opponent tokens in ally throw zone
-        total += self.f2(is_upper) * weights[1]
-        if debug: values.append(self.f2(is_upper) * weights[1])
+        # Feature 2: Difference in throws
+        total += (self.f1(is_upper) - self.f1(not is_upper)) * Board.weight[1][Board.phase]
 
-        # Feature A3:
-        total += self.f3(is_upper) * weights[2]
-        if debug: values.append(self.f3(is_upper) * weights[2])
+        # Feature 3: Diffenece in endangered tokens
+        total += (self.f2(is_upper) - self.f2(not is_upper)) * Board.weight[2][Board.phase]
 
-        # Feature A4:
-        total += self.f4(is_upper) * weights[3]
-        if debug: values.append(self.f4(is_upper) * weights[3])
+        # Feature 4: Distance feature (difference?)
+        total += (self.f7(is_upper) - self.f2(not is_upper)) * Board.weight[3][Board.phase]
 
-        # Feature A5:
-        total += self.f5(is_upper) * weights[4]
-        if debug: values.append(self.f5(is_upper) * weights[4])
+        # Penalty 1: Can't defeat any
+        if self.f8(is_upper):
+            total -= Board.weight[4][Board.phase]
 
-        # Feature A6:
-        total += self.f6(is_upper) * weights[5]
-        if debug: values.append(self.f6(is_upper) * weights[5])
-
-        total += self.f7(is_upper) * weights[6]
-        if debug: values.append(self.f7(is_upper) * weights[6])
-
-        if self.f8(is_upper): total -= 500
-
-        if self.f8(not is_upper): total += 500
-
-        # Feature E1:
-        total += self.f1(not is_upper) * weights[7]
-
-        # Feature E2:
-        total += self.f2(not is_upper) * weights[8]
-
-        # Feature E3:
-        total += self.f3(not is_upper) * weights[9]
-
-        # Feature E4:
-        total += self.f4(not is_upper) * weights[10]
-
-        # Feature E5:
-        total += self.f5(not is_upper) * weights[11]
-
-        # Feature E6:
-        total += self.f6(not is_upper) * weights[12]
-
-        if debug: 
-            values.append(total)
-            print(values)
-            print("")
+        # Penalty 2: Opponent has invincible
+        if self.has_invincible_token(not is_upper):
+            total -= Board.weight[4][Board.phase]
 
         return total
 
@@ -338,7 +303,6 @@ class Board:
     '''
     def successor(self, is_upper):
         '''
-        TODO can use different update method to improve efficiency
         move: ("ACTION", (r0,q0), (r1,q1))
         '''
         successors = []
@@ -369,25 +333,12 @@ class Board:
         if (is_upper and self.upper_num_throws_left != 0) or (not is_upper and self.lower_num_throws_left != 0):
             # not self.endangered
             for token in self.endangered_tokens(is_upper):
-                # all possible location this token can be in next turn
-                # possible_location = self.valid_moves(token)
-                # possible_location.append(token.location)
-                # for location in possible_location:
-                #     # if location is within the throw zone
-                #     if self.throwable_location(is_upper, location):
-                #         action = ("THROW", token.enemy_type, location)
-                #         if action not in successors:
-                #             successors.append(action)
                 action = ("THROW", token.enemy_type, token.location)
                 if action not in successors:
                     successors.append(action)
                 
 
-        # only throw when we have nothing else to do
-        '''
-        1. Throw to (4,2) or (-4,2)
-        2. Type: Throw the type which can beat most enemy
-        '''
+        # Throw to some specific location on board
         locations = [(4,-2),(3,-2),(2,-1),(1,-1),(0,0),(-1,0),(-2,1),(-3,1),(-4,2)]
         if is_upper:
             locations.reverse()
@@ -411,10 +362,12 @@ class Board:
     
     def is_useful(self, token):
         if self.opponent_tokens(token.is_upper)[token.beat_type] or self.opponent_tokens(token.is_upper)[token.enemy_type]: return True
+        # TODO
+        # also check if this token is too far away from rest of the opponent tokens
+        
         return False
 
     # can ally throw to a location
-    # TODO not throwable after 9 throws
     def throwable_location(self, is_upper, location):
         if is_upper:
             if self.upper_num_throws_left == 0:
@@ -428,7 +381,6 @@ class Board:
             return location[0] <= row
 
     # simply find all possible moves by a token
-    # TODO Swing action should be before slide action
     def valid_moves(self, token):
         neighbours = Board.find_neighbours(token.location)
         far_neighbours = []
@@ -493,7 +445,9 @@ class Board:
         if is_upper:
             return self.lower_tokens
         return self.upper_tokens
-
+        
+    # This function is adapted from hex distance in axial coordinates from
+    # https://www.redblobgames.com/grids/hexagons/ 
     @staticmethod
     def hex_distance(a,b):
         return ((abs(a[0] - b[0]) 

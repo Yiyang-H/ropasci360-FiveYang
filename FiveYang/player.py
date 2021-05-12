@@ -6,7 +6,6 @@ from random import randint
 
 class Player:
 
-    _instance = None
     upper_start_game = [("THROW", "p", (4, -2)), ("THROW", "r", (3, -2)), ("THROW", "s", (3, -1)), ("SWING",(4,-2),(2,-1)), ("SWING",(3,-2),(1,0))]
     lower_start_game = [("THROW", "p", (-4, 2)), ("THROW", "r", (-3, 2)), ("THROW", "s", (-3, 1)), ("SWING",(-4,2),(-2,1)), ("SWING",(-3,2),(-1,0))]
 
@@ -30,8 +29,6 @@ class Player:
         tokens_list: count
         '''
 
-        #TODO delete this?
-        Player._instance = self
 
     def action(self):
         """
@@ -47,11 +44,6 @@ class Player:
             else:
                 return Player.lower_start_game[self.turn-1]
 
-        # take dowen logic
-        # if not self.next_move: self.next_move = self.take_down()
-
-        # charge logic
-        # if not self.next_move: self.next_move = self.charge()
         ally_tokens_in_danger = self.board.eatable_tokens(not self.is_upper)
         opponent_tokens_in_danger = self.board.eatable_tokens(self.is_upper)
 
@@ -62,12 +54,13 @@ class Player:
             self.next_move = self.throw_logic()
         elif logic == "hide":
             self.next_move = self.hide_logic(ally_tokens_in_danger)
+        elif logic == "run":
+            self.next_move = self.run_logic(ally_tokens_in_danger)
         elif logic == "trade":
             self.next_move = self.trade_logic(ally_tokens_in_danger, opponent_tokens_in_danger)
             
         # put your code here
 
-        # TODO Might not have next action due to removing repeating state
         if not self.next_move:
             if self.num_node_visited < 300000:
                 self.max_value(deepcopy(self.board), -inf, inf,2)
@@ -91,10 +84,18 @@ class Player:
         if len(ally_tokens_in_danger) == 1 and self.has_same_type(ally_tokens_in_danger):
             return "hide"
 
+        if len(ally_tokens_in_danger) == 1 and self.token_at_corner(ally_tokens_in_danger[0]):
+            return "run"
+
         # trade logic: aggressive trading strategy, 
         #              If my move result one opponent token defeated, take that move
         if len(opponent_tokens_in_danger) - len(ally_tokens_in_danger) > 0:
             return "trade"
+
+    def token_at_corner(self, token):
+        corner = [(4,-4),(4,0),(0,4),(-4,4),(-4,0),(0,-4)]
+        return token.location in corner
+        
 
 
     def has_same_type(self, ally_tokens_in_danger):
@@ -114,6 +115,23 @@ class Player:
                     if self.check_repeated(action):
                         continue
                     return action
+    
+    def run_logic(self, ally_tokens_in_danger):
+        if len(ally_tokens_in_danger) == 1:
+            token = ally_tokens_in_danger[0]
+            valid_moves = self.board.valid_moves(token)
+            opponent_locations = []
+            for opponent_token in self.board.opponent_tokens(token.is_upper)[token.enemy_type]:
+                if opponent_token.location not in opponent_locations:
+                    opponent_locations.append(opponent_token.location)
+            
+            for valid_move in valid_moves:
+                if valid_move not in opponent_locations:
+                    action = ("", token.location, valid_move)
+                    if self.check_repeated(action):
+                        continue
+                    return action
+        return None
 
 
     # When called, meaning we can take down some enemy without sacrifice any ally token
@@ -280,21 +298,9 @@ class Player:
         for action in board.successor(not self.is_upper):
             # update the borad
 
-            # print(board.upper_tokens_list)
-            # print(board.lower_tokens_list)
-            # print(board.successor(not self.is_upper))
-            # print(player_action, action)
+
             new_board = deepcopy(board)
             self.update(action, player_action, new_board)
-            # print(board.upper_tokens_list)
-            # print(board.lower_tokens_list)
-            # check finished?
-            '''
-            if turn_count == 0:
-                print("player:" , player_action)
-                print("opponent:" , action)
-                return new_board.eval(self.is_upper)
-            '''
             beta = min(beta, self.max_value(new_board, alpha, beta, turn_count, first_round = False))
             if beta <= alpha:
                 return alpha
@@ -330,6 +336,8 @@ class Player:
     def move_action(action_type, origin, destination):
         return (action_type, origin, destination)
 
+    # This function is adapted from hex distance in axial coordinates from
+    # https://www.redblobgames.com/grids/hexagons/ 
     @staticmethod
     def hex_distance(a,b):
         return ((abs(a[0] - b[0]) 
