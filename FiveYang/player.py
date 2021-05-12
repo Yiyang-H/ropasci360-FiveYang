@@ -51,27 +51,30 @@ class Player:
 
         # charge logic
         # if not self.next_move: self.next_move = self.charge()
+        ally_tokens_in_danger = self.board.eatable_tokens(not self.is_upper)
+        opponent_tokens_in_danger = self.board.eatable_tokens(self.is_upper)
 
-        logic = self.identify_logic()
+        logic = self.identify_logic(ally_tokens_in_danger, opponent_tokens_in_danger)
         if logic == "attack":
             self.next_move = self.take_down()
         elif logic == "throw":
             self.next_move = self.throw_logic()
+        elif logic == "hide":
+            self.next_move = self.hide(ally_tokens_in_danger)
         elif logic == "trade":
-            self.next_move = self.trade_logic()
-
+            self.next_move = self.trade_logic(ally_tokens_in_danger, opponent_tokens_in_danger)
+        print(logic)
             
         # put your code here
 
         # TODO Might not have next action due to removing repeating state
-        if not self.next_move: self.max_value(deepcopy(self.board), -inf, inf)
+        if not self.next_move: print(self.max_value(deepcopy(self.board), -inf, inf))
+        print(self.next_move)
         return self.fix_action(self.next_move)
 
     # Identify if we can apply some specific logic to the current board
-    def identify_logic(self):
-        ally_tokens_in_danger = self.board.eatable_tokens(not self.is_upper)
-        opponent_tokens_in_danger = self.board.eatable_tokens(self.is_upper)
-
+    def identify_logic(self, ally_tokens_in_danger, opponent_tokens_in_danger):
+        
         # attack logic: when I can defeat opponent token but opponent cannot defeat mine
         if len(ally_tokens_in_danger) == 0 and len(opponent_tokens_in_danger) > 0:
             return "attack"
@@ -81,11 +84,32 @@ class Player:
         if len(ally_tokens_in_danger) == 0 and len(throwable_opponent_tokens) >= 3 and self.turn >= 0:
             return "throw"
         # defend logic: when ally_token is in danger, and there is a same type opponent token beside
+        if len(ally_tokens_in_danger) > 0 and self.has_same_type(ally_tokens_in_danger):
+            return "hide"
 
         # trade logic: aggressive trading strategy, 
         #              If my move result one opponent token defeated, take that move
         if len(opponent_tokens_in_danger) - len(ally_tokens_in_danger) > 0:
             return "trade"
+
+
+    def has_same_type(self, ally_tokens_in_danger):
+        for ally in ally_tokens_in_danger:
+            valid_moves = self.board.valid_moves(ally)
+            for opponent in self.board.opponent_tokens(self.is_upper)[ally.token_type]:
+                if opponent.location in valid_moves:
+                    return True
+        return False
+
+    def hide(self, ally_tokens_in_danger):
+        for ally in ally_tokens_in_danger:
+            valid_moves = self.board.valid_moves(ally)
+            for opponent in self.board.opponent_tokens(self.is_upper)[ally.token_type]:
+                if opponent.location in valid_moves:
+                    action = ("", ally.location, opponent.location)
+                    if self.check_repeated(action):
+                        continue
+                    return action
 
 
     # When called, meaning we can take down some enemy without sacrifice any ally token
@@ -128,15 +152,13 @@ class Player:
 
 
     # When called, meaning some ally is at risk but at the same time we can take enemy token down as well
-    def trade_logic(self):
-        opponent_tokens_in_danger = self.board.eatable_tokens(self.is_upper)
-        ally_tokens_in_danger = self.board.eatable_tokens(not self.is_upper)
+    def trade_logic(self, ally_tokens_in_danger, opponent_tokens_in_danger):
 
         # prioritise in danger ally token
         for token in ally_tokens_in_danger:
             valid_moves = self.board.valid_moves(token)
             for opponent_token in opponent_tokens_in_danger:
-                if opponent_token.location in valid_moves:
+                if opponent_token.location in valid_moves and opponent_token.token_type == token.beat_type:
                     action = ("", token.location, opponent_token.location)
                     if self.check_repeated(action):
                         continue
@@ -231,7 +253,10 @@ class Player:
 
     # A function which perform a search algorithm and returns information  
     # regarding the next move
-    def max_value(self, board, alpha, beta, turn_count = 2, first_round = True):
+    def max_value(self, board, alpha, beta, turn_count = 1, first_round = True):
+        if turn_count == 0:
+                return board.eval(self.is_upper)
+        
         for action in board.successor(self.is_upper):
             if first_round and self.check_repeated(action):
                 continue
@@ -258,10 +283,13 @@ class Player:
             self.update(action, player_action, new_board)
             # print(board.upper_tokens_list)
             # print(board.lower_tokens_list)
-            # chech finished?
+            # check finished?
+            '''
             if turn_count == 0:
+                print("player:" , player_action)
+                print("opponent:" , action)
                 return new_board.eval(self.is_upper)
-            
+            '''
             beta = min(beta, self.max_value(new_board, alpha, beta, turn_count, first_round = False))
             if beta <= alpha:
                 return alpha

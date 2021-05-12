@@ -46,9 +46,6 @@ class Board:
         for token in tokens_list:
             if token.location == location:
                 return token
-        ### TODO This line should not be reached, just in case if reached, print error message
-        # remove later
-        print("="*60,"Something is wrong at find_token_at_location!","="*60,sep="\n")
 
     # check all the tokens and battle tokens with same location
     def battle(self):
@@ -88,7 +85,8 @@ class Board:
             self.lower_tokens[token.token_type].remove(token)
 
     def eval(self, is_upper):
-        weights = (5000, 990, 0, 20000, 0, 14000, 1, -5000, -990, -0, -10000, -0, -14000)
+        debug = False
+        weights = (5000, 990, 0, 10000, 0, 14000, 1, -5000, -990, -0, -10000, -0, -14000)
         # TODO
         weight = ((100000, 5000, 2000, 50),#1: #dead
                 (10000),#2: #throw_left
@@ -96,26 +94,34 @@ class Board:
                 (0))#4: #distance
 
         total = 0
+        if debug: values = []
         
         # Feature A1: #ally throws
         total += self.f1(is_upper) * weights[0]
+        if debug: values.append(self.f1(is_upper) * weights[0])
 
         # Feature A2: #opponent tokens in ally throw zone
         total += self.f2(is_upper) * weights[1]
+        if debug: values.append(self.f2(is_upper) * weights[1])
 
         # Feature A3:
         total += self.f3(is_upper) * weights[2]
+        if debug: values.append(self.f3(is_upper) * weights[2])
 
         # Feature A4:
         total += self.f4(is_upper) * weights[3]
+        if debug: values.append(self.f4(is_upper) * weights[3])
 
         # Feature A5:
         total += self.f5(is_upper) * weights[4]
+        if debug: values.append(self.f5(is_upper) * weights[4])
 
         # Feature A6:
         total += self.f6(is_upper) * weights[5]
+        if debug: values.append(self.f6(is_upper) * weights[5])
 
         total += self.f7(is_upper) * weights[6]
+        if debug: values.append(self.f7(is_upper) * weights[6])
 
         if self.f8(is_upper): total -= 500
 
@@ -139,7 +145,10 @@ class Board:
         # Feature E6:
         total += self.f6(not is_upper) * weights[12]
 
-
+        if debug: 
+            values.append(total)
+            print(values)
+            print("")
 
         return total
 
